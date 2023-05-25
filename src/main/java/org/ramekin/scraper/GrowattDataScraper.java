@@ -1,5 +1,10 @@
 package org.ramekin.scraper;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import org.ramekin.model.Login;
+
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -44,7 +49,11 @@ public class GrowattDataScraper {
             return;
         }
 
-        System.out.println(response.body());
+        Gson gson = new Gson();
+        final Login login = gson.fromJson(response.body(), Login.class);
+
+        System.out.print("Your plant ID is " + login.getPlantId() + " and your plant name is " + login.getPlantName() + " with account name " + login.getAccountName());
+
     }
 
     private static String getFormDataAsString(Map<String, String> formData) {
