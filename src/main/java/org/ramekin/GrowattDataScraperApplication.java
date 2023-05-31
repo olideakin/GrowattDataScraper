@@ -3,7 +3,7 @@ package org.ramekin;
 import org.ramekin.scraper.GrowattDataScraper;
 
 public class GrowattDataScraperApplication {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 
         final String uri = args[0];
         final String username = args[1];

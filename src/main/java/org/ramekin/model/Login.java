@@ -305,7 +305,7 @@ public class Login {
         return back.user.isPhoneNumReg;
     }
 
-    public int getIsValiEmail() {
+    public int getIsValidEmail() {
         return back.user.isValiEmail;
     }
 
@@ -343,5 +343,10 @@ public class Login {
 
     public int getApp_code() {
         return back.app_code;
+    }
+
+    @Override
+    public String toString() {
+        return "Your plant ID is " + this.getPlantId() + " and your plant name is " + this.getPlantName() + " installed on " + this.getCreateDate() + " with account name " + this.getAccountName();
     }
 }
