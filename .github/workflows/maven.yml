@@ -50,7 +50,11 @@ jobs:
           path: target/
 
       - name: Build image
-        run: docker build . --file docker/Dockerfile --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}"
+        run: | 
+          pwd
+          ls
+          ls target/
+          docker build . --file docker/Dockerfile --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}"
 
       - name: Log in to registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
