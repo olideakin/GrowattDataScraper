@@ -26,6 +26,7 @@ jobs:
 
   # Push image to GitHub Packages.
   docker:
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       packages: write
