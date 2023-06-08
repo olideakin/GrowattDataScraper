@@ -47,7 +47,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: GrowattDataScraper.jar
-          path: .
+          path: target/
 
       - name: Build image
         run: docker build . --file docker/Dockerfile --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}"
