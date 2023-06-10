@@ -18,13 +18,14 @@ public class AWSClient {
 
     AWSClient(final Regions clientRegion) {
         s3Client = AmazonS3ClientBuilder.standard()
-            .withCredentials(new EnvironmentVariableCredentialsProvider())
+            //.withCredentials(new EnvironmentVariableCredentialsProvider()) - not necessary in the default chain, which will look for env vars or fall back to task IAM permissions if available
             .withRegion(clientRegion)
             .build();
     }
 
-    String createS3Bucket(final String bucketName) {
+    void createS3Bucket(final String bucketName) {
         String bucketLocation;
+        System.out.println("Looking for S3 bucket " + bucketName);
         if (s3Client.doesBucketExistV2(bucketName)) {
             bucketLocation = s3Client.getBucketLocation(bucketName);
             System.out.println("Bucket already exists with location " + bucketLocation);
@@ -37,8 +38,6 @@ public class AWSClient {
             bucketLocation = s3Client.getBucketLocation(new GetBucketLocationRequest(bucketName));
             System.out.println("New bucket created in location: " + bucketLocation);
         }
-
-        return bucketLocation;
     }
 
     boolean isBucketEmpty(final String bucketName) {

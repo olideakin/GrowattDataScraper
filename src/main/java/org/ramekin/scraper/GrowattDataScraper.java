@@ -87,7 +87,8 @@ public class GrowattDataScraper {
          * Simplistic implementation for now - just start from the 1st of each month that we need to request (either backfilling or just the current month)
          * and write the entire month's data into a file which is then PUT to S3. Keeping this simple for now as the cost of doing this with such a small
          * amount of data and low frequency of requests is very low. A better implementation might use Athena, for example, to just INSERT the newest entries,
-         * but that would mean configuring the Glue catalogue that probably isn't worth it for now given the simplicity of this use case.
+         * but that would mean configuring the Glue catalogue that probably isn't worth it for now given the simplicity of this use case. Possibly could download
+         * the S3 object, append and then upload again - that will probably be the next revision of this code to reduce wasted Growatt API calls.
          */
         for (LocalDate date = startDate; !date.isAfter(today); date = date.plus(1, ChronoUnit.MONTHS)) {
             // Set up a file to write the metrics to based on the current month under inspection
