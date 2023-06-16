@@ -13,5 +13,7 @@ public class GrowattDataScraperApplication {
 
         GrowattDataScraper growattDataScraper = new GrowattDataScraper(uri);
         growattDataScraper.scrape(username, passwordMD5);
+
+        System.out.println("---=== All done! ===---");
     }
 }

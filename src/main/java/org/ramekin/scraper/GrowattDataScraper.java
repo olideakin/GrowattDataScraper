@@ -42,6 +42,10 @@ public class GrowattDataScraper {
 
     public void scrape(final String username, final String password) throws Exception {
 
+        // Set up AWS client and create bucket if it doesn't already exist
+        final AWSClient awsClient = new AWSClient(Regions.EU_WEST_1);
+        awsClient.createS3Bucket(S3_BUCKET_NAME);
+
         // Login to the service
         final Login login = login(username, password);
         System.out.println(login);
@@ -57,12 +61,9 @@ public class GrowattDataScraper {
         }
 
         // Get the first plant
+        // TODO: Write out any useful plant data
         final Plant plant = getPlant(plantList.getPlantId(0));
         System.out.println(plant);
-
-        // Set up AWS client and create bucket if it doesn't already exist
-        final AWSClient awsClient = new AWSClient(Regions.EU_WEST_1);
-        awsClient.createS3Bucket(S3_BUCKET_NAME);
 
         // Used to request data for certain date ranges from the Growatt API
         final LocalDate today = LocalDate.now();
@@ -84,7 +85,7 @@ public class GrowattDataScraper {
         }
 
         /*
-         * Simplistic implementation for now - just start from the 1st of each month that we need to request (either backfilling or just the current month)
+         * TODO: Simplistic implementation for now - just start from the 1st of each month that we need to request (either backfilling or just the current month)
          * and write the entire month's data into a file which is then PUT to S3. Keeping this simple for now as the cost of doing this with such a small
          * amount of data and low frequency of requests is very low. A better implementation might use Athena, for example, to just INSERT the newest entries,
          * but that would mean configuring the Glue catalogue that probably isn't worth it for now given the simplicity of this use case. Possibly could download
@@ -96,18 +97,19 @@ public class GrowattDataScraper {
             System.out.println("Current month under inspection is " + currentMonth);
             final String fileName = currentMonth + ".csv";
             final PrintWriter printWriter = new PrintWriter(new FileWriter(fileName));
-            printWriter.println("date,time,solarOutputKW,exportToGridKW,importFromGridKW,batteryDischargeKW,localConsumptionKW");
+            printWriter.println("timestamp,solarOutputKW,exportToGridKW,importFromGridKW,batteryDischargeKW,localConsumptionKW");
 
             // Get mix system details and write to local file
             final int lastDayInMonthToRequest = date.getMonthValue() < today.getMonthValue() ? date.lengthOfMonth() : today.getDayOfMonth();
             for (int dayOfMonth = 1; dayOfMonth <= lastDayInMonthToRequest; dayOfMonth++) {
                 final LocalDate dateToProcess = LocalDate.of(date.getYear(), date.getMonth(), dayOfMonth);
-                final MixDetail mixDetail = getMixDetail(plant.getDeviceSn(0), plantList.getPlantId(0), TIMESPAN.HOUR, dateToProcess);
+                final String formattedDate = dateToProcess.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
+                final MixDetail mixDetail = getMixDetail(plant.getDeviceSn(0), plantList.getPlantId(0), TIMESPAN.HOUR, dateToProcess);
                 mixDetail.getChartData().entrySet()
                         .stream()
                         .sorted(Map.Entry.comparingByKey())
-                        .forEach(entry -> printWriter.printf("%s,%s,%s,%s,%s,%s,%s\n", dateToProcess.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")), entry.getKey(), entry.getValue().getPpv(),
+                        .forEach(entry -> printWriter.printf("%s %s,%s,%s,%s,%s,%s\n", formattedDate, entry.getKey(), entry.getValue().getPpv(),
                                 entry.getValue().getPacToGrid(), entry.getValue().getPacToUser(), entry.getValue().getPdischarge(), entry.getValue().getSysOut()));
             }
             printWriter.close();
