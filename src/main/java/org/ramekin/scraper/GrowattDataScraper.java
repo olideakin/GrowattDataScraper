@@ -17,11 +17,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class GrowattDataScraper {
 
@@ -84,6 +86,8 @@ public class GrowattDataScraper {
             System.out.println("Reading only this month's data");
         }
 
+        final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ENGLISH);
+
         /*
          * TODO: Simplistic implementation for now - just start from the 1st of each month that we need to request (either backfilling or just the current month)
          * and write the entire month's data into a file which is then PUT to S3. Keeping this simple for now as the cost of doing this with such a small
@@ -97,20 +101,25 @@ public class GrowattDataScraper {
             System.out.println("Current month under inspection is " + currentMonth);
             final String fileName = currentMonth + ".csv";
             final PrintWriter printWriter = new PrintWriter(new FileWriter(fileName));
-            printWriter.println("timestamp,solarOutputKW,exportToGridKW,importFromGridKW,batteryDischargeKW,localConsumptionKW");
+            //printWriter.println("timestamp,solarOutputKW,exportToGridKW,importFromGridKW,batteryDischargeKW,localConsumptionKW");
+
 
             // Get mix system details and write to local file
             final int lastDayInMonthToRequest = date.getMonthValue() < today.getMonthValue() ? date.lengthOfMonth() : today.getDayOfMonth();
             for (int dayOfMonth = 1; dayOfMonth <= lastDayInMonthToRequest; dayOfMonth++) {
                 final LocalDate dateToProcess = LocalDate.of(date.getYear(), date.getMonth(), dayOfMonth);
-                final String formattedDate = dateToProcess.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
                 final MixDetail mixDetail = getMixDetail(plant.getDeviceSn(0), plantList.getPlantId(0), TIMESPAN.HOUR, dateToProcess);
                 mixDetail.getChartData().entrySet()
                         .stream()
                         .sorted(Map.Entry.comparingByKey())
-                        .forEach(entry -> printWriter.printf("%s %s,%s,%s,%s,%s,%s\n", formattedDate, entry.getKey(), entry.getValue().getPpv(),
-                                entry.getValue().getPacToGrid(), entry.getValue().getPacToUser(), entry.getValue().getPdischarge(), entry.getValue().getSysOut()));
+                        .forEach(entry -> {
+                            final String[] splitTime = entry.getKey().split(":");
+                            final LocalDateTime dateTimeOfMeasure = LocalDateTime.of(dateToProcess.getYear(), dateToProcess.getMonth(), dateToProcess.getDayOfMonth(), Integer.parseInt(splitTime[0]), Integer.parseInt(splitTime[1]));
+                            final long millisSinceEpoch = dateTimeOfMeasure.toInstant(ZoneOffset.UTC).toEpochMilli();
+                            printWriter.printf("%d,%s,%s,%s,%s,%s\n", millisSinceEpoch, entry.getValue().getPpv(),
+                                    entry.getValue().getPacToGrid(), entry.getValue().getPacToUser(), entry.getValue().getPdischarge(), entry.getValue().getSysOut());
+                        });
             }
             printWriter.close();
 
